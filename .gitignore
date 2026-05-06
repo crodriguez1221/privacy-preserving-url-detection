@@ -1,0 +1,40 @@
+# Python cache
+__pycache__/
+*.pyc
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.pyproj
+*.pyproj.user
+
+# Environment files
+.env
+
+# Data files
+data/*.csv
+data/*.xml
+data/*.txt
+
+# Allow documentation/sample files
+!data/README.md
+!data/sample_urls.csv
+
+# Outputs
+outputs/*.pkl
+outputs/*.csv
+outputs/*.png
+outputs/*.txt
+outputs/*.log
+
+# Allow output documentation
+!outputs/README.md
+
+# OS files
+.DS_Store
+Thumbs.db
