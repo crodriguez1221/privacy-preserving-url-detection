@@ -169,6 +169,18 @@ python src/phishing_gui.py
 
 ---
 
+## Documentation
+
+The `docs/` directory contains supporting academic and technical documentation associated with this project, including:
+
+- Software Requirements Specification (SRS)
+- Final project report
+- Presentation slides
+
+These documents describe the system requirements, architectural decisions, implementation methodology, evaluation procedures, and overall design considerations for the offline malicious URL detection system.
+
+---
+
 ## Reproducibility 
 
 - All random processes use `random_state = 42`
