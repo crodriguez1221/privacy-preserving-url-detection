@@ -1,29 +1,50 @@
 # Privacy-Preserving Offline Machine Learning System for Malicious URL Detection
 
 ## Overview
-This repository contains the implementation of a privacy-preserving, fully offline machine learning system for malicious URL detection. The system classifies URLs as malicious or legitimate using only features derived from the URL string itself, without relying on external data sources such as DNS queries, WHOIS lookups, webpage content, or API-based threat intelligence.
+This repository contains the core implementation of a privacy-preserving, fully offline machine learning system for malicious URL detection. The system classifies URLs as malicious or legitimate using only features derived from the URL string itself, without relying on external data sources such as DNS queries, WHOIS lookups, webpage content, or API-based threat intelligence.
 
 The design emphasizes reproducibility, interpretability, and deployment in constrained environments, including air-gapped systems and privacy-sensitive contexts. The system is implemented as a modular pipeline composed of independent scripts, each responsible for a single stage of processing.
+
+This project was developed as an Advanced Design Project for the Master of Science in Computer Science program at Saint Martin's University. 
+
+---
+
+## Intended Use
+
+This repository demonstrates the design and evaluation of a privacy-preserving machine learning pipeline for cybersecurity research, with emphasis on:
+
+- Malicious URL detection
+- Offline and privacy-preserving system design
+- Machine learning model development and evaluation
+- Feature engineering and feature selection
+- Cross-dataset generalization
+- Reproducible experimental methodology
+- Modular Python software design
+
+This project is an academic research prototype and is not intended to replace production threat-detection or enterprise security systems.
 
 ---
 
 ## Key Characteristics
 
 - **Fully Offline Operation**
-  - No network communication at any stage
-  - No DNS resolution, WHOIS queries, or HTTP requests
+  - No network communication during pipeline execution or inference
+  - No DNS resolution, WHOIS queries, HTTP requests, or external API calls
+  - All classification features are derived directly from the URL string
 
 - **Privacy-Preserving Design**
-  - No external data enrichment or data sharing
-  - All processing occurs locally
+  - No external data enrichment or runtime data sharing
+  - All processing occurs locally after source datasets have been obtained
 
 - **Reproducible Pipeline**
-  - Deterministic execution using fixed random seeds
-  - Intermediate outputs stored as CSV files for inspection and validation
+  - Fixed random seeds are used for randomly determined operations
+  - Deterministic feature extraction
+  - Intermediate outputs are stored for inspection and validation
 
 - **Modular Architecture**
-  - Eight independent scripts following the single-responsibility principle
-  - File-based data flow between pipeline stages
+  - Eight core Python scripts following the single-responsibility principle
+  - File-based communication between pipeline stages
+  - Individual stages can be inspected, validated, or rerun independently
 
 - **Lightweight Machine Learning Models**
   - Logistic Regression
@@ -31,66 +52,103 @@ The design emphasizes reproducibility, interpretability, and deployment in const
   - Decision Tree
   - Majority-vote ensemble for inference
 
+- **Cross-Dataset Evaluation**
+  - Bidirectional evaluation between independently sourced malicious URL datasets
+  - Designed to measure generalization beyond the distribution used for training
+    
 ---
 
 ## System Architecture
 
-The system is implemented as an eight-stage pipeline:
+The core system consists of eight Python scripts organized into four logical processing phases followed by a standalone inference path.
 
-1. **Data Ingestion**
-   - `convert_phishtank.py` — Parses PhishTank XML into CSV format
-   - `convert_urlhaus.py` — Parses URLhaus text feed into CSV format
+### Phase 1 — Data Ingestion
 
-2. **Dataset Construction**
-   - `build_dataset.py` — Combines malicious and legitimate URLs and enforces class balance
+- `convert_phishtank.py` — Parses PhishTank XML and converts verified malicious URLs into a standardized CSV format
+- `convert_urlhaus.py` — Parses the URLhaus text feed and converts malicious URLs into the same standardized schema
 
-3. **Data Preparation**
-   - `prepare_data.py` — Cleans, validates, and deduplicates datasets
+### Phase 2 — Dataset Construction
 
-4. **Feature Engineering**
-   - `extract_features.py` — Extracts 24 lexical and structural features from URL strings
+- `build_dataset.py` — Independently combines each malicious source with legitimate domains from the Tranco Top Sites list and constructs balanced datasets
 
-5. **Model Training**
-   - `train_models.py` — Trains and evaluates classifiers using stratified sampling and cross-validation
+### Phase 3 — Data Preparation and Feature Engineering
 
-6. **Cross-Dataset Evaluation**
-   - `cross_dataset_eval.py` — Evaluates generalization across distinct threat intelligence sources
+- `prepare_data.py` — Cleans, validates, deduplicates, and normalizes dataset labels
+- `extract_features.py` — Extracts 24 lexical and structural features from each URL string
 
-7. **Inference**
-   - `predict.py` — Classifies new URLs using trained models
-   - `phishing_gui.py` — Optional graphical interface for offline classification
+### Phase 4 — Modeling and Evaluation
 
-All scripts operate independently and communicate exclusively through CSV files and serialized model artifacts.
+- `train_models.py` — Trains Logistic Regression, Random Forest, and Decision Tree classifiers using an 80/20 stratified train/test split and five-fold cross-validation
+- `cross_dataset_eval.py` — Performs bidirectional cross-dataset evaluation to measure generalization across distinct malicious URL sources
+
+### Standalone Inference
+
+- `predict.py` — Loads trained model artifacts and classifies user-supplied URLs using the same URL-string feature engineering applied during training
+
+The repository also includes a lightweight Tkinter graphical interface (`phishing_gui.py`) for demonstrating offline URL classification. The GUI uses the same underlying inference logic as `predict.py` and is provided as an optional interface rather than a component of the eight-script core pipeline.
+
+Pipeline stages communicate through structured CSV files and serialized model artifacts rather than direct inter-script function calls, shared memory, or database connections.
 
 ---
 
 ## Feature Engineering
 
-The system derives **24 features** exclusively from the URL string, including:
+The baseline system derives **24 lexical and structural features** exclusively from the URL string.
 
-- Length-based features (e.g., URL length, path length)
-- Character count features (e.g., number of dots, digits)
-- Structural indicators (e.g., presence of HTTPS, IP address usage)
-- Statistical measures (e.g., entropy, character ratios)
+These include:
 
-A reduced feature set of 13 features may also be used based on feature importance analysis.
+- Length-based features
+- Character-count features
+- Structural URL indicators
+- Entropy measurements
+- Character-ratio measurements
+
+Because all features can be calculated from the URL string itself, classification does not require resolving, visiting, or externally enriching the URL.
+
+### Feature Selection Experiment
+
+The project also evaluated a reduced feature configuration.
+
+The experimental methodology consisted of three iterations:
+
+1. **Iteration 1 — Baseline**
+   - Full 24-feature schema
+   - Baseline configurations for all three classifiers
+
+2. **Iteration 2 — Feature Selection**
+   - Random Forest feature importance was analyzed across both datasets
+   - 11 low-contribution features were removed
+   - The resulting **13-feature configuration** was evaluated using the same models
+
+3. **Iteration 3 — Hyperparameter Optimization**
+   - Grid-search hyperparameter optimization was applied using the reduced 13-feature configuration
+   - Models were reevaluated to determine whether tuning improved cross-dataset generalization
+
+The 13-feature configuration therefore represents an experimentally derived reduced feature set rather than the original feature-extraction schema.
 
 ---
 
 ## Machine Learning Models
 
-Three lightweight classifiers are implemented:
+Three lightweight supervised classifiers are implemented:
 
-- **Logistic Regression**
-  - Linear baseline model with feature scaling
+### Logistic Regression
 
-- **Random Forest**
-  - Ensemble model capturing nonlinear feature interactions
+A linear classifier used with feature scaling. `StandardScaler` is fitted on the training data and applied to evaluation data without fitting on the test set.
 
-- **Decision Tree**
-  - Interpretable rule-based classifier
+### Random Forest
 
-For inference, the system uses a **majority-vote ensemble**, combining predictions from all three models.
+An ensemble classifier capable of modeling nonlinear relationships between URL features. Random Forest feature importance was also used during the feature-selection experiment.
+
+### Decision Tree
+
+An interpretable rule-based classifier that provides a comparatively transparent decision structure.
+
+### Majority-Vote Inference
+
+For standalone inference, predictions from Logistic Regression, Random Forest, and Decision Tree are combined using a **majority-vote ensemble**.
+
+Individual model predictions remain available alongside the combined classification result.
 
 ---
 
@@ -130,16 +188,33 @@ pip install -r requirements.txt
 
 ---
 
+## Data Setup
+
+### One-Time Dataset Preparation
+
+The following scripts are used to convert the raw threat datasets and construct the experimental datasets:
+
+```bash
+python src/convert_phishtank.py
+python src/convert_urlhaus.py
+python src/build_dataset.py
+```
+
+These scripts generally need to be run only once for a given set of source data. They should be rerun if the source datasets are replaced or the experimental datasets need to be rebuilt.
+
+---
+
 ## Usage
 
-### Run the pipeline
+### Run the Modeling Pipeline
+
+After the experimental datasets have been constructed:
 
 ```bash
 python src/prepare_data.py
 python src/extract_features.py
 python src/train_models.py
 python src/cross_dataset_eval.py
-```
 
 ### Predict a single URL
 
@@ -171,13 +246,13 @@ python src/phishing_gui.py
 
 ## Documentation
 
-The `docs/` directory contains supporting academic and technical documentation associated with this project, including:
+The `docs/` directory contains selected excerpts from the academic and technical documentation developed for this project, including:
 
-- Software Requirements Specification (SRS)
-- Final project report
+- Software Requirements Specification (SRS) excerpt
+- Final project report excerpt
 - Presentation slides
 
-These documents describe the system requirements, architectural decisions, implementation methodology, evaluation procedures, and overall design considerations for the offline malicious URL detection system.
+The complete SRS and final report were produced as part of the Master of Science in Computer Science Advanced Design Project but are not included in this public repository.
 
 ---
 
@@ -197,16 +272,6 @@ These documents describe the system requirements, architectural decisions, imple
   - DNS or WHOIS metadata
   - External threat intelligence feeds
 - Cross-dataset evaluation shows that models trained on one dataset may not fully generalize to structurally different URL distributions
-
----
-
-## Intended Use
-
-This repository is intended for:
-
-- Academic research and demonstration
-- Exploration of lightweight, offline malicious URL detection
-- Study of cross-dataset generalization in cybersecurity
 
 ---
 
